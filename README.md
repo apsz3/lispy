@@ -1,5 +1,7 @@
 
-Inspired by Peter Norvig's Lispy tutorial, with help from SICP, I implemented a Lisp-like language. Beyond the basics (like control flow), I added support for strings, lexical scoping, a module system, some syntactic sugar, and a nice REPL.
+Inspired by Peter Norvig's Lispy tutorial, with help from SICP, I implemented a Lisp-like language. Beyond the basics (like control flow), I added support for strings, closures, lexical scoping, a module system, some syntactic sugar, and a nice REPL.
+
+![lispy-demo](https://github.com/apsz3/lispy/assets/62445385/fc39c0a5-dde0-46cc-a3ba-bf096ac59bf9)
 
 Warning: the implementations here aren't pretty, and have known bugs. I've put them on Git specifically for my application here. First, they represent fast-moving experimentation; to this end, they are written in Python, my primary language, which conveniently has robust builtin types, compared to C. Next, they could certainly be designed more efficiently with better practices. However, I am generally happy with the features accomplished thus-far.
 
