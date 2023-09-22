@@ -1,3 +1,4 @@
+(include "./std.lsp")
 ;; basics
 (asseq (add 1 2) 3)
     ;; fns are first class, so we've aliased "add" to "+"
