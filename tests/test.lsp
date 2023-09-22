@@ -1,5 +1,5 @@
 ;; imports / includes
-(include "./tests/std.lsp")
+;;(include "./tests/std.lsp") -- it is autoloaded
 ;; `inc` is defined in `std.lsp`, as is `asseq` (assert equals)
 (asseq (inc 5) 6)
 
@@ -100,3 +100,4 @@
 (asseq (math->min 1 2) -10)
 (asseq (math->pow 2 8) 256)
 
+(print "All tests passed.")

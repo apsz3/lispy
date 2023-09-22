@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
 
 import operator as op
-import sys
 import traceback
 from dataclasses import dataclass
-from enum import Enum, auto
-from hashlib import new
+from enum import Enum
 from pathlib import Path
 from typing import Any, List, Union
-from unittest.mock import ANY
 
 import click
-from prompt_toolkit import PromptSession, print_formatted_text, prompt
+from prompt_toolkit import PromptSession, print_formatted_text
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.history import FileHistory
@@ -67,19 +64,6 @@ class Atom:
 NULL = Atom(None)
 
 
-def ass(x):
-    assert x
-
-
-def JOLLA_EQ(a, b):
-    try:
-        return a == b
-    except:
-        return False  # Comapring different types gets hairy.
-        # At the moment, the main issue is comparing a list element, to '().
-        # TODO: resolve.
-
-
 class Expr:
     def __init__(self, op, *operands):
         self.op = op
@@ -132,7 +116,7 @@ class BoxPtr:
         hd = cls(NULL, NULL)
         cur = hd
         for arg in args:
-            if JOLLA_EQ(cur.box, NULL):
+            if IS_EQ(cur.box, NULL):
                 cur.box = arg
             else:
                 cur.ptr = cls(arg, NULL)
@@ -151,6 +135,19 @@ class Procedure:
         frame = Env(self.env)
         frame.inner = {k: v for k, v in zip(self.bound_params, actual_params)}
         return Eval(self.body, frame)
+
+
+def ass(x):
+    assert x
+
+
+def IS_EQ(a, b):
+    try:
+        return a == b
+    except:
+        return False  # Comparing different types gets hairy.
+        # At the moment, the main issue is comparing a list element, to '().
+        # TODO: resolve.
 
 
 # ----------- Parsing
@@ -375,7 +372,7 @@ BUILTINS = {
     Symbol("and"): op.and_,
     Symbol("or"): op.or_,
     Symbol("not"): op.not_,
-    Symbol("eq"): JOLLA_EQ,
+    Symbol("eq"): IS_EQ,
     Symbol("gt"): op.gt,
     Symbol("lt"): op.lt,
     Symbol("sub"): op.sub,
@@ -384,10 +381,6 @@ BUILTINS = {
     Symbol("quine"): lambda: "quine",
     Symbol("ass"): ass,
     Symbol("print"): print,
-    # no matter the inputs, return a flattened list.
-    # Symbol("merge"): lambda a,b: \
-    #     (a if type(a) is list else [a])
-    #     + (b if type(b) is list else [b]),
     Symbol("cons"): lambda a, b: BoxPtr(a, b),
     Symbol("hd"): lambda a: a.box,
     Symbol("tl"): lambda a: a.ptr,
@@ -491,7 +484,7 @@ def REPL(env=GLOBAL_ENV):
     session = PromptSession(FileHistory("~/.lispy"))
     # Builtins we don't define in symbol table, that we want
     # to show up in repl completer
-    extend_complete = ["defn", "quote", "eval", "list"]
+    extend_complete = [sym.s for sym in BUILTINS] + ["defn"]
     while True:
         # Update it with new symbols
         lisp_completer = WordCompleter(
@@ -539,8 +532,8 @@ def REPL(env=GLOBAL_ENV):
 # TODO allow specifying an include path, a directory to prefix all
 # relative includes too...
 def main(file, i):
-    # std = loadfile(Path(__file__).parent / "tests/std.lsp")
-    # [Exec(expr) for expr in std]
+    std = loadfile(Path(__file__).parent / "std.lsp")
+    [Exec(expr) for expr in std]
     if file:
         if file == "test":
             test()
