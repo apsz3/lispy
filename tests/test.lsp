@@ -74,16 +74,6 @@
 ;; Note: We can have the sugar call a proper method, at some point,
 ;; rather than this arbitrary process currently of $a->$b => ($a '$b)
 
-;; Getting higher-level, we can make
-;; a procedure that will automatically
-;; give us this ending lambda method.
-;; Note the use of `begin` here to let us
-;; `eval` into the environment
-(defn make-pkg
-    (lambda (body)
-    (begin
-        (eval body)
-        (lambda (method) (eval method)))))
 
 ;; We make a `math` package which includes
 ;; a procedure `min` which overrides the one in the stdlib
@@ -95,9 +85,18 @@
         (if (eq n 0) 1
         (mul x (pow x (sub n 1))))))
 )))
+
 (assneq (min 1 2) (math->min 1 2))
 (asseq (min 1 2) 1)
 (asseq (math->min 1 2) -10)
 (asseq (math->pow 2 8) 256)
 
+;; We can nest scope
+
+(defn outer (make-pkg '(list
+    (defn inner (make-pkg '(list
+        (defn x 1)
+    ))))))
+
+(asseq outer->inner->x 1)
 (print "All tests passed.")

@@ -86,6 +86,9 @@ class Env:
         self.inner: dict = {}
         self.outer: "Env" = outer
 
+    def __repr__(self):
+        return str(self.inner)
+
     def find(self, k):
         if k in self.inner:
             return self.inner[k]
@@ -337,19 +340,29 @@ def parse(expr: str):
                         val = Atom(tok)
                     except:
                         if "->" in tok:
-                            refs = tok.split("->")
-                            # (pkg-name->method *args) EXPANDS TO ((pkg-name 'method) *args)
-                            # which is currently our idiom for accessing smth.
-                            hd = Expr(
-                                Symbol(refs[0]), Expr(Symbol("quote"), Symbol(refs[1]))
-                            )
-                            val = hd
+                            val = collect_arrow_refs(tok)
                         else:
                             val = Symbol(tok)
                     stack[-1].append(val)  # Normal case.
         return stack
 
     return _parse(lexed)
+
+
+def collect_arrow_refs(tok: str):
+    # (pkg-name->method *args) EXPANDS TO ((pkg-name 'method) *args).
+    # But it is possible we have (pkg-outer->pkg-inner->method *args);
+    # We need to evaluate this properly.
+    # The basic idea is to go
+    # ((pkg-outer 'pkg-inner))
+    # TODO: dont split and rejoin.
+    refs = tok.split("->")
+    hd = Symbol(refs[0])
+    if len(refs) == 1:
+        return hd
+
+    res = Expr(hd, Expr(Symbol("quote"), collect_arrow_refs("->".join(refs[1:]))))
+    return res
 
 
 ###########
@@ -535,9 +548,6 @@ def main(file, i):
     std = loadfile(Path(__file__).parent / "std.lsp")
     [Exec(expr) for expr in std]
     if file:
-        if file == "test":
-            test()
-            return
         exprs = loadfile(file)
         [Exec(expr) for expr in exprs]
         if i:
