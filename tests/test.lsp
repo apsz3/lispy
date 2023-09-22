@@ -1,3 +1,11 @@
+;; basics
+(asseq (add 1 2) 3)
+    ;; fns are first class, so we've aliased "add" to "+"
+    (asseq (+ 1 2) 3)
+(asseq (sub 1 2) -1)
+(asseq (hd (cons 1 (cons 2 '()))) 1)
+(asseq (tl (cons 1 (cons 2 '()))) (cons 2 '()))
+
 ;; imports / includes
 ;;(include "./tests/std.lsp") -- it is autoloaded
 ;; `inc` is defined in `std.lsp`, as is `asseq` (assert equals)

@@ -150,7 +150,7 @@ def test():
             raise Exception(
                 f"Test error: actual result {res} failed against expected {expected} "
             )
-    print("=== UNIT TESTS PASSED ===")
+    print("=== PARSING TESTS PASSED ===")
     p = str(Path(__file__).parent) + "/tests/test.lsp"
     print(f"... Running program {p} ...")
     exprs = loadfile(p)
@@ -161,7 +161,7 @@ def test():
     for expr in exprs:
         res = Exec(expr, _new_global)
         print(expr, "=>", res)
-    print("=== PROGRAM TESTS PASSED ===")
+    print("=== RUNTIME TESTS PASSED ===")
 
 
 test()
