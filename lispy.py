@@ -20,7 +20,7 @@ class Symbol:
         self.s = s
 
     def __repr__(self):
-        return f"${self.s}"
+        return self.s
 
     def __str__(self):
         return self.s
@@ -73,7 +73,7 @@ class Expr:
         return self.op == other.op and self.operands == other.operands
 
     def __repr__(self):
-        return "{" + str(self.op) + "{" + " ".join(map(str, self.operands)) + "}" + "}"
+        return f"({str(self.op)} " + " ".join(map(str, self.operands)) + ")"
 
 
 # An Expr is what gets inputted to the Eval.
@@ -138,6 +138,9 @@ class Procedure:
         frame = Env(self.env)
         frame.inner = {k: v for k, v in zip(self.bound_params, actual_params)}
         return Eval(self.body, frame)
+
+    def __repr__(self):
+        return str(self.bound_params) + " -> " + str(self.body)
 
 
 def ass(x):
@@ -516,7 +519,6 @@ def REPL(env=GLOBAL_ENV):
         )
         text = strip_comments(text)
         exprs = balancedparens(text)  # Multiline-pasting into REPL needs to be handled.
-
         for expr in exprs:
             try:
                 parsed = parse(expr)
@@ -527,7 +529,11 @@ def REPL(env=GLOBAL_ENV):
             try:
                 res = Eval(parsed, env)
                 if res is not None:
-                    print_formatted_text(res)
+                    print(str(res))
+                    # print_formatted_text(res) # This breaks because,
+                    # for some reason, we are CALLING res, which if it is a
+                    # procedure, breaks. This is because we have __call__
+                    # overrided. TODO.
             except KeyError as exc:
                 traceback_str = "".join(traceback.format_tb(exc.__traceback__))
                 print(traceback_str)
