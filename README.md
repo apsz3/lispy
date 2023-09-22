@@ -123,3 +123,30 @@ The below code is copied from `tests/test.lsp`
 (asseq (math->min 1 2) -10)
 (asseq (math->pow 2 8) 256)
 ```
+
+
+# TODO:
+
+```txt
+###########
+# Testing #
+###########
+
+# TODO: transition from Exprs to box-and-pointer model...
+# We want to be able to do (hd '( 1 2 )) and not get an expr error.
+
+
+# TODO: wtf?
+# (lisp)> (cons 1 '())
+# $ (1, None)
+# (lisp)> (cons 1 ())
+# $ (1, None)
+# (lisp)> (tl (cons 1 ()))
+# (lisp)> (tl (cons 1 '()))
+# $ None
+# (lisp)>
+
+# (eq (tl (cons 1 ())) '()) -> ERROR NoneType has no attribute `.s` (for comparison)
+# However, '() is a symbol, so we can do
+# (eq (tl (cons 1 '())) '()) -> True
+```
