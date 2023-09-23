@@ -197,6 +197,14 @@ class Token(Enum):
         return self.value
 
 
+def atom_or_symbol(val):
+    try:
+        val = Atom(val)
+    except:
+        val = Symbol(val)
+    return val
+
+
 def parse(expr: str):
     # Expr is a single balanced / well-formed expression.
     # We do not handle a sequence of expressions here.
@@ -207,18 +215,12 @@ def parse(expr: str):
         # Then, just set their op to their val, and no operands.
         if expr.startswith("'"):
             expr = expr[1:]
-            try:
-                val = Atom(expr)
-            except:
-                val = Symbol(expr)
+            val = atom_or_symbol(expr)
             return Expr(Symbol("quote"), val)
         else:
             # A symbol or a literal
-            try:
-                val = Atom(expr)
-            except:
-                val = Symbol(expr)
-            return val
+
+            return atom_or_symbol(expr)
 
     expr = expr.replace("(", " ( ").replace(")", " ) ")
     expr = expr.replace("\\n", "\n")  # raw char encoding -> proper encoding
@@ -324,11 +326,8 @@ def parse(expr: str):
                 # That is handled implicitly by appending it as a string,
                 # and then processing it on popping an expr.
                 tok = tok[1:]
-                try:
-                    val = Atom(tok)
-                except:
-                    val = Symbol(tok)
-                stack[-1].append(Expr(Symbol("quote"), val))
+
+                stack[-1].append(Expr(Symbol("quote"), atom_or_symbol(tok)))
             else:
                 if tok == "'":
                     stack.append(tok)
