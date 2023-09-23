@@ -134,7 +134,7 @@ strs = [
 ]
 
 
-def test():
+def test_lispy():
     num_unit, num_bootstrapped = 0, 0
     for case, expected in (
         tests + list_tests + advanced_tests + more_elaborate + nesting + strs
@@ -151,7 +151,7 @@ def test():
                 f"Test error: actual result {res} failed against expected {expected} "
             )
     print("=== PARSING TESTS PASSED ===")
-    p = str(Path(__file__).parent) + "/tests/test.lsp"
+    p = str(Path(__file__).parent) + "/test.lsp"
     print(f"... Running program {p} ...")
     exprs = loadfile(p)
     # Clean environment to avoid horribly pernicious bugs between
@@ -162,6 +162,3 @@ def test():
         res = Exec(expr, _new_global)
         print(expr, "=>", res)
     print("=== RUNTIME TESTS PASSED ===")
-
-
-test()
