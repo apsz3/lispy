@@ -4,7 +4,7 @@ setup(
     name="lispy",
     version="0.1",
     packages=find_packages(),
-    entry_points={"console_scripts": ["lispy = lispy:main"]},
+    entry_points={"console_scripts": ["lispy = cli:main"]},
     # Metadata
     # could be any number of things, including install_requires
     install_requires=[
