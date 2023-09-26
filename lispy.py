@@ -131,7 +131,7 @@ class Procedure:
         # Struct Interp of Prog pg 241
         frame = Env(self.env)
         frame.inner = {k: v for k, v in zip(self.bound_params, actual_params)}
-        return Eval(self.body, frame)
+        return Eval(self.body, frame, False)
 
     def __repr__(self):
         return str(self.bound_params) + " -> " + str(self.body)
@@ -217,6 +217,14 @@ def parse(expr: str):
             expr = expr[1:]
             val = atom_or_symbol(expr)
             return Expr(Symbol("quote"), val)
+        elif expr.startswith("`"):
+            expr = expr[1:]
+            val = atom_or_symbol(expr)
+            return Expr(Symbol("quasiquote"), val)
+        elif expr.startswith(","):
+            expr = expr[1:]
+            val = atom_or_symbol(expr)
+            return Expr(Symbol("comma"), val)
         else:
             # A symbol or a literal
 
@@ -277,7 +285,7 @@ def parse(expr: str):
     def _rewrite(stack):
         # apply syntactic sugar transforms
         popped = stack.pop()
-        if popped == []:  # Consecutive ()
+        if popped == []:  # '() Expr
             res = NULL
             if len(stack) != 0 and isinstance(stack[-1], str) and stack[-1] == "'":
                 res = Expr(Symbol("quote"), res)  # not an Expr(res) here.
@@ -293,6 +301,16 @@ def parse(expr: str):
                 # NOTE/TODO: sending `*` as the OPERANDS to an Expr
                 # will pack it as a TUPLE.
                 res = Expr(Symbol("quote"), expr)
+                stack.pop()  # get rid of the `'` now.
+            elif len(stack) != 0 and isinstance(stack[-1], str) and stack[-1] == "`":
+                # NOTE/TODO: sending `*` as the OPERANDS to an Expr
+                # will pack it as a TUPLE.
+                res = Expr(Symbol("quasiquote"), expr)  # Expand everything!
+                stack.pop()  # get rid of the `'` now.
+            elif len(stack) != 0 and isinstance(stack[-1], str) and stack[-1] == ",":
+                # NOTE/TODO: sending `*` as the OPERANDS to an Expr
+                # will pack it as a TUPLE.
+                res = Expr(Symbol("comma"), expr)
                 stack.pop()  # get rid of the `'` now.
             else:
                 res = expr
@@ -328,8 +346,28 @@ def parse(expr: str):
                 tok = tok[1:]
 
                 stack[-1].append(Expr(Symbol("quote"), atom_or_symbol(tok)))
+            elif tok.startswith("`") and tok != "`":
+                # Handle an individually quoted element
+                # within an expression.
+                # It will be an OPERAND; this is not quoting an expression.
+                # That is handled implicitly by appending it as a string,
+                # and then processing it on popping an expr.
+                tok = tok[1:]
+                stack[-1].append(Expr(Symbol("quasiquote"), atom_or_symbol(tok)))
+            elif tok.startswith(",") and tok != ",":
+                # Handle an individually quoted element
+                # within an expression.
+                # It will be an OPERAND; this is not quoting an expression.
+                # That is handled implicitly by appending it as a string,
+                # and then processing it on popping an expr.
+                tok = tok[1:]
+                stack[-1].append(Expr(Symbol("comma"), atom_or_symbol(tok)))
             else:
                 if tok == "'":
+                    stack.append(tok)
+                elif tok == "`":
+                    stack.append(tok)
+                elif tok == ",":
                     stack.append(tok)
                 else:
                     try:
@@ -404,18 +442,29 @@ BUILTINS = {
 GLOBAL_ENV.inner = BUILTINS
 
 
-def Eval(x, env):
+def Eval(x, env, qtd):
     while True:
         # Expects a parsed input.
         if isinstance(x, Atom):
+            if qtd:
+                return x
             return x.s
         elif isinstance(x, Symbol):
+            if qtd:
+                return x
             return env.find(x)
-        assert isinstance(x, Expr)
+        try:
+            assert isinstance(x, Expr)
+        except:
+            print(x)
+            breakpoint()
         # Have to check for nested Expr first,
         # because the following conditionals
         # expect expr.op to be a Symbol.
         if isinstance(x.op, Expr):
+            if qtd:
+                if x.op == Symbol("comma"):
+                    return Eval(x, env, False)
             # This is the case of an APPLICATION
             # of a lambda.
             # First, evaluate the lambda to get the procedure object.
@@ -423,7 +472,7 @@ def Eval(x, env):
             # Then, call the procedure on these arguments.
             # Note: assert x.op.op == Symbol("lambda") won't always work.
             # What if you have a lambda, returning a lambda?
-            return Eval(x.op, env)([Eval(var, env) for var in x.operands])
+            return Eval(x.op, env, qtd)([Eval(var, env, qtd) for var in x.operands])
 
         # Do not evaluate; return it literally
         if x.op == Symbol("quote"):
@@ -431,28 +480,55 @@ def Eval(x, env):
             # We should make an internal representation which is just cons/car/cdr,
             # so we don't have to run into this sort of thing, where even singletons
             # in our implementation, are lists.
+            if qtd:
+                return x
             if len(x.operands) == 1:
                 return x.operands[0]
             return x.operands
+        elif x.op == Symbol("comma"):
+            # Comma can only qt one thing
+            # if qtd:
+            #     return x
+            res = Eval(x.operands[0], env, False)
+            return res
+        elif x.op == Symbol("quasiquote"):
+            # if qtd:
+            #     return x
+            # Evaluate comma'd exprs.
+            operands = []
+            for expr in x.operands:
+                operands.append(Eval(expr, env, True))
+                # operands.append(Eval(expr.op, env, False)([Eval(var, env, False) for var in expr.operands])
+            if len(operands) == 1:
+                return operands[0]
+            return operands
         elif x.op == Symbol("begin"):
-            return [Eval(expr, env) for expr in x.operands][-1]
+            # if qtd:
+            #     return x
+            return [Eval(expr, env, qtd) for expr in x.operands][-1]
         # Conditional
         elif x.op == Symbol("if"):
+            # if qtd:
+            #     return x
             cond, branch_true, branch_false = x.operands
-            if Eval(cond, env):
+            if Eval(cond, env, qtd):
                 x = branch_true
             else:
                 x = branch_false
         elif x.op == Symbol("defn"):
+            # if qtd:
+            #     return x
             # Instead of just evaluating the 'first' expression;
             # we evaluate all of them, and bind the name
             # to the result of the last evaluated expresion.
             # This lets us do nested definitions.
             nested_env = Env(env)
-            procedure = [Eval(i, nested_env) for i in x.operands[1:]][-1]
+            procedure = [Eval(i, nested_env, qtd) for i in x.operands[1:]][-1]
             env.inner[x.operands[0]] = procedure
             return procedure
         elif x.op == Symbol("lambda"):
+            # if qtd:
+            #     return x
             # The evaluation of a lambda creates a procedure.
             # (lambda (<params>) <expr|atom|symbol>)
             params, body = x.operands
@@ -464,15 +540,27 @@ def Eval(x, env):
                 params = [params.op, *params.operands]
                 return Procedure(params, body, env)
         elif x.op == Symbol("include"):
+            # if qtd:
+            #     return x
             # Load the definitions and evaluate them in the CURRENT
             # environment.
             return include(Eval(x.operands[0], env), env)
         elif x.op == Symbol("eval"):
-            x = Eval(*x.operands, env)  # Eval(Eval(x.operands, env), env)
+            if qtd:
+                return x
+            x = Eval(*x.operands, env, qtd)  # Eval(Eval(x.operands, env), env)
         else:
+            # if qtd:
+            #     return x
             # Primitive operations here -- add, etc. CPU crap.
-            op = Eval(x.op, env)
-            operands = [Eval(o, env) for o in x.operands]
+            # Must recursively evaluate here, passing the quoted thing back.
+            # Quasiquote doesn't mean we _dont_ evaluate the expression:
+            # We do evalute it , we just return the unchanged input if qtd=True;
+            # and otherwise, compute things after `,`
+            op = Eval(x.op, env, qtd)
+            operands = [Eval(o, env, qtd) for o in x.operands]
+            if qtd:
+                return Expr(op, *operands)
             if isinstance(op, Procedure):  # Hack because it expects a list.
                 # for binding.
                 return op(operands)
@@ -487,7 +575,7 @@ def Eval(x, env):
 
 
 def Exec(s, env=GLOBAL_ENV):
-    return Eval(parse(s), env)
+    return Eval(parse(s), env, False)
 
 
 def loadfile(path) -> List[Expr]:
