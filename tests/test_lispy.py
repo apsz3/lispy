@@ -21,6 +21,7 @@ tests = [
         '(if (gt (add 1 2) 4) (add (if #true (add 1 -1) 1) 3) "fals")',
         "fals",
     ),  # => "fals",
+    ("(eval '(add 1 2))", 3),
 ]
 list_tests = [
     ("(cons 1 2)", BoxPtr(1, 2)),

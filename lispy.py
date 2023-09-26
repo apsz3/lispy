@@ -468,7 +468,7 @@ def Eval(x, env):
             # environment.
             return include(Eval(x.operands[0], env), env)
         elif x.op == Symbol("eval"):
-            return Eval(Eval(*x.operands, env), env)  # Eval(Eval(x.operands, env), env)
+            x = Eval(*x.operands, env)  # Eval(Eval(x.operands, env), env)
         else:
             # Primitive operations here -- add, etc. CPU crap.
             op = Eval(x.op, env)
@@ -476,9 +476,9 @@ def Eval(x, env):
             if isinstance(op, Procedure):  # Hack because it expects a list.
                 # for binding.
                 return op(operands)
-            return op(
-                *operands
-            )  # But builtins don't operate on lists; we unpack them instead.
+            else:
+                return op(*operands)
+            # But builtins don't operate on lists; we unpack them instead.
 
 
 #################
