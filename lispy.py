@@ -405,76 +405,80 @@ GLOBAL_ENV.inner = BUILTINS
 
 
 def Eval(x, env):
-    # Expects a parsed input.
-    if isinstance(x, Atom):
-        return x.s
-    elif isinstance(x, Symbol):
-        return env.find(x)
-    assert isinstance(x, Expr)
-    # Have to check for nested Expr first,
-    # because the following conditionals
-    # expect expr.op to be a Symbol.
-    if isinstance(x.op, Expr):
-        # This is the case of an APPLICATION
-        # of a lambda.
-        # First, evaluate the lambda to get the procedure object.
-        # Also evaluate then the arguments to the lambda
-        # Then, call the procedure on these arguments.
-        # Note: assert x.op.op == Symbol("lambda") won't always work.
-        # What if you have a lambda, returning a lambda?
-        return Eval(x.op, env)([Eval(var, env) for var in x.operands])
+    while True:
+        # Expects a parsed input.
+        if isinstance(x, Atom):
+            return x.s
+        elif isinstance(x, Symbol):
+            return env.find(x)
+        assert isinstance(x, Expr)
+        # Have to check for nested Expr first,
+        # because the following conditionals
+        # expect expr.op to be a Symbol.
+        if isinstance(x.op, Expr):
+            # This is the case of an APPLICATION
+            # of a lambda.
+            # First, evaluate the lambda to get the procedure object.
+            # Also evaluate then the arguments to the lambda
+            # Then, call the procedure on these arguments.
+            # Note: assert x.op.op == Symbol("lambda") won't always work.
+            # What if you have a lambda, returning a lambda?
+            return Eval(x.op, env)([Eval(var, env) for var in x.operands])
 
-    # Do not evaluate; return it literally
-    if x.op == Symbol("quote"):
-        # TODO: this is annoying, having to do this distinguishing.
-        # We should make an internal representation which is just cons/car/cdr,
-        # so we don't have to run into this sort of thing, where even singletons
-        # in our implementation, are lists.
-        if len(x.operands) == 1:
-            return x.operands[0]
-        return x.operands
-    elif x.op == Symbol("begin"):
-        return [Eval(expr, env) for expr in x.operands][-1]
-    # Conditional
-    elif x.op == Symbol("if"):
-        cond, branch_true, branch_false = x.operands
-        return Eval(branch_true, env) if Eval(cond, env) else Eval(branch_false, env)
-    elif x.op == Symbol("defn"):
-        # Instead of just evaluating the 'first' expression;
-        # we evaluate all of them, and bind the name
-        # to the result of the last evaluated expresion.
-        # This lets us do nested definitions.
-        nested_env = Env(env)
-        procedure = [Eval(i, nested_env) for i in x.operands[1:]][-1]
-        env.inner[x.operands[0]] = procedure
-        return procedure
-    elif x.op == Symbol("lambda"):
-        # The evaluation of a lambda creates a procedure.
-        # (lambda (<params>) <expr|atom|symbol>)
-        params, body = x.operands
-        if params is NULL:  # Empty parameter list.
-            return Procedure([], body, env)
+        # Do not evaluate; return it literally
+        if x.op == Symbol("quote"):
+            # TODO: this is annoying, having to do this distinguishing.
+            # We should make an internal representation which is just cons/car/cdr,
+            # so we don't have to run into this sort of thing, where even singletons
+            # in our implementation, are lists.
+            if len(x.operands) == 1:
+                return x.operands[0]
+            return x.operands
+        elif x.op == Symbol("begin"):
+            return [Eval(expr, env) for expr in x.operands][-1]
+        # Conditional
+        elif x.op == Symbol("if"):
+            cond, branch_true, branch_false = x.operands
+            if Eval(cond, env):
+                x = branch_true
+            else:
+                x = branch_false
+        elif x.op == Symbol("defn"):
+            # Instead of just evaluating the 'first' expression;
+            # we evaluate all of them, and bind the name
+            # to the result of the last evaluated expresion.
+            # This lets us do nested definitions.
+            nested_env = Env(env)
+            procedure = [Eval(i, nested_env) for i in x.operands[1:]][-1]
+            env.inner[x.operands[0]] = procedure
+            return procedure
+        elif x.op == Symbol("lambda"):
+            # The evaluation of a lambda creates a procedure.
+            # (lambda (<params>) <expr|atom|symbol>)
+            params, body = x.operands
+            if params is NULL:  # Empty parameter list.
+                return Procedure([], body, env)
+            else:
+                # Hack the Expr() syntax here to collect our
+                # paramters; (a b c) will have `a` as the expr op.
+                params = [params.op, *params.operands]
+                return Procedure(params, body, env)
+        elif x.op == Symbol("include"):
+            # Load the definitions and evaluate them in the CURRENT
+            # environment.
+            return include(Eval(x.operands[0], env), env)
+        elif x.op == Symbol("eval"):
+            return Eval(Eval(*x.operands, env), env)  # Eval(Eval(x.operands, env), env)
         else:
-            # Hack the Expr() syntax here to collect our
-            # paramters; (a b c) will have `a` as the expr op.
-            params = [params.op, *params.operands]
-            return Procedure(params, body, env)
-    elif x.op == Symbol("include"):
-        # Load the definitions and evaluate them in the CURRENT
-        # environment.
-        return include(Eval(x.operands[0], env), env)
-    elif x.op == Symbol("eval"):
-        return Eval(Eval(*x.operands, env), env)  # Eval(Eval(x.operands, env), env)
-    else:
-        # Primitive operations here -- add, etc. CPU crap.
-        op = Eval(x.op, env)
-        operands = [Eval(o, env) for o in x.operands]
-        if isinstance(op, Procedure):  # Hack because it expects a list.
-            # for binding.
-            return op(operands)
-        return op(
-            *operands
-        )  # But builtins don't operate on lists; we unpack them instead.
+            # Primitive operations here -- add, etc. CPU crap.
+            op = Eval(x.op, env)
+            operands = [Eval(o, env) for o in x.operands]
+            if isinstance(op, Procedure):  # Hack because it expects a list.
+                # for binding.
+                return op(operands)
+            return op(
+                *operands
+            )  # But builtins don't operate on lists; we unpack them instead.
 
 
 #################
