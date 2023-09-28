@@ -453,11 +453,11 @@ def Eval(x, env, qtd):
             if qtd:
                 return x
             return env.find(x)
-        try:
-            assert isinstance(x, Expr)
-        except:
-            print(x)
-            breakpoint()
+        # try:
+        assert isinstance(x, Expr)
+        # except:
+        #     print(x)
+        #     breakpoint()
         # Have to check for nested Expr first,
         # because the following conditionals
         # expect expr.op to be a Symbol.
@@ -499,6 +499,7 @@ def Eval(x, env, qtd):
             for expr in x.operands:
                 operands.append(Eval(expr, env, True))
                 # operands.append(Eval(expr.op, env, False)([Eval(var, env, False) for var in expr.operands])
+            # breakpoint()
             if len(operands) == 1:
                 return operands[0]
             return operands
@@ -544,7 +545,7 @@ def Eval(x, env, qtd):
             #     return x
             # Load the definitions and evaluate them in the CURRENT
             # environment.
-            return include(Eval(x.operands[0], env), env)
+            return include(Eval(x.operands[0], env, qtd), env)
         elif x.op == Symbol("eval"):
             if qtd:
                 return x
@@ -558,9 +559,13 @@ def Eval(x, env, qtd):
             # We do evalute it , we just return the unchanged input if qtd=True;
             # and otherwise, compute things after `,`
             op = Eval(x.op, env, qtd)
-            operands = [Eval(o, env, qtd) for o in x.operands]
+            operands = x.operands
             if qtd:
+                # print("qtd", op, operands)
                 return Expr(op, *operands)
+            else:
+                # print("nq", op, operands)
+                operands = [Eval(o, env, qtd) for o in x.operands]
             if isinstance(op, Procedure):  # Hack because it expects a list.
                 # for binding.
                 return op(operands)
