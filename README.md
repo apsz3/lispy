@@ -33,10 +33,13 @@ General tail-call elimination is the goal.
 (asseq (map inc ls) (list 2 3 4))
 ```
 
-Note: the codebase is in the midst of refactoring / cleaning; currently, this repository represents fast-moving experimentation, and to this end, I have implemented Lispy in Python, which is more convenient to work with due to its robust builtin types, than more efficient languages like C.
+See  `https://github.com/apsz3/lispy/blob/master/tests/test.lsp` for more
+Lispy code (these tests are tested in `pytest`)
+
+# Usage
 
 ```
-(py310) ➜  lispy git:(master) ✗ lispy --help
+> lispy --help
 Usage: lispy [OPTIONS] [FILE]
 
 Options:
@@ -44,8 +47,13 @@ Options:
   --help  Show this message and exit.
 ```
 
+# Testing
 
-https://github.com/apsz3/lispy/blob/master/tests/test.lsp
+Run `pytest` in the root directory.
+
+# Notes
+
+Note: the codebase is in the midst of refactoring / cleaning; currently, this repository represents fast-moving experimentation, and to this end, I have implemented Lispy in Python, which is more convenient to work with due to its robust builtin types, than more efficient languages like C.
 
 # TODO
 
