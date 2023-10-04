@@ -38,7 +38,7 @@ def REPL(env=lp.GLOBAL_ENV):
                 continue
 
             try:
-                res = lp.Eval(parsed, env)
+                res = lp.Eval(parsed, env, False)
                 if res is not None:
                     print(str(res))
                     # print_formatted_text(res) # This breaks because,
