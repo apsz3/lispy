@@ -110,8 +110,13 @@
 (asseq outer->inner->x 1)
 
 ;; Quasiquotes
+(asseq `1 (quasiquote 1))
+(asseq `(+ 1 2) (quasiquote (+ 1 2)))
 (asseq (eval `2) 2)
 (asseq (eval `(+ 1 ,(+ 2 3))) 6)
+(asseq (eval `(+ 1 `(+ ,(+ 1 1) ,(+ 2 3)))) 8)
+
+
 ;; Quasiquoting gives us closures
 (defn close-over 2)
 (defn x `(fib ,close-over))

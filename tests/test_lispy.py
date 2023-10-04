@@ -140,6 +140,10 @@ quasiquote = [
     # not Atoms.
     ("`(add 1 ,(add 2 3 ))))", Expr(Symbol("add"), Atom("1"), 5)),
     ("`(list 1 ,2 ,(add 2 3 ))))", Expr(Symbol("list"), Atom("1"), 2, 5)),
+    (
+        "`(add `(add ,(add 1 1) 2) 1)",
+        Expr(Symbol("add"), Expr(Symbol("add"), 2, Atom("2")), Atom("1")),
+    ),
 ]
 
 
