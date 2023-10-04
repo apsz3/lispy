@@ -135,10 +135,24 @@ strs = [
 ]
 
 
+quasiquote = [
+    # Todo: not sure if we want the parse to evaluate to actual integers,
+    # not Atoms.
+    ("`(add 1 ,(add 2 3 ))))", Expr(Symbol("add"), Atom("1"), 5)),
+    ("`(list 1 ,2 ,(add 2 3 ))))", Expr(Symbol("list"), Atom("1"), 2, 5)),
+]
+
+
 def test_lispy():
     num_unit, num_bootstrapped = 0, 0
     for case, expected in (
-        tests + list_tests + advanced_tests + more_elaborate + nesting + strs
+        tests
+        + list_tests
+        + advanced_tests
+        + more_elaborate
+        + nesting
+        + strs
+        + quasiquote
     ):
         res = Exec(case)
         print(parse(case), "=> ", res)

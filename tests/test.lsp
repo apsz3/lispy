@@ -108,4 +108,12 @@
     ))))))
 
 (asseq outer->inner->x 1)
+
+;; Quasiquotes
+(asseq (eval `2) 2)
+(asseq (eval `(+ 1 ,(+ 2 3))) 6)
+;; Quasiquoting gives us closures
+(defn close-over 2)
+(defn x `(fib ,close-over))
+(asseq (eval x) 1)
 (print "All tests passed.")

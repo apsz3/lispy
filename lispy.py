@@ -213,6 +213,7 @@ def parse(expr: str):
         # For example, a string with spaces parses as a whole...
         # Literals should ideally be considered 'expressions' too.
         # Then, just set their op to their val, and no operands.
+        # TODO: this does not support strings like < `,x >
         if expr.startswith("'"):
             expr = expr[1:]
             val = atom_or_symbol(expr)
@@ -444,6 +445,7 @@ GLOBAL_ENV.inner = BUILTINS
 
 def Eval(x, env, qtd):
     while True:
+        # print(x)
         # Expects a parsed input.
         if isinstance(x, Atom):
             if qtd:
@@ -453,11 +455,13 @@ def Eval(x, env, qtd):
             if qtd:
                 return x
             return env.find(x)
-        # try:
-        assert isinstance(x, Expr)
-        # except:
-        #     print(x)
-        #     breakpoint()
+        try:
+            assert isinstance(x, Expr)
+        except:
+            # Usually we get here from a quasiquote unquoted
+            # expr being evaluated
+            return x
+
         # Have to check for nested Expr first,
         # because the following conditionals
         # expect expr.op to be a Symbol.
@@ -489,6 +493,7 @@ def Eval(x, env, qtd):
             # Comma can only qt one thing
             # if qtd:
             #     return x
+            # print("!!!")
             res = Eval(x.operands[0], env, False)
             return res
         elif x.op == Symbol("quasiquote"):
@@ -557,15 +562,19 @@ def Eval(x, env, qtd):
             # Must recursively evaluate here, passing the quoted thing back.
             # Quasiquote doesn't mean we _dont_ evaluate the expression:
             # We do evalute it , we just return the unchanged input if qtd=True;
-            # and otherwise, compute things after `,`
+            # and otherwise, compute things after `,`\
+            # if qtd:
+            #     return x
             op = Eval(x.op, env, qtd)
-            operands = x.operands
+            operands = [Eval(o, env, qtd) for o in x.operands]
+            # print(op, operands)
+
             if qtd:
-                # print("qtd", op, operands)
-                return Expr(op, *operands)
-            else:
-                # print("nq", op, operands)
-                operands = [Eval(o, env, qtd) for o in x.operands]
+                if isinstance(op, Procedure):  # Hack because it expects a list.
+                    # for binding.
+                    return Expr(op, operands)
+                else:
+                    return Expr(op, *operands)
             if isinstance(op, Procedure):  # Hack because it expects a list.
                 # for binding.
                 return op(operands)
