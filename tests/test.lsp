@@ -121,4 +121,20 @@
 (defn close-over 2)
 (defn x `(fib ,close-over))
 (asseq (eval x) 1)
+
+;; Alternative way of making package
+(defn math '(list
+    (defn more-constants '(list
+        (defn x 2)
+    ))
+    (defn more-constants-pkg (make-pkg more-constants))
+    (asseq more-constants-pkg->x 2)
+    (defn pi 3)
+    (defn e 2)
+    (defn max (lambda (a b) (if (> a b) a b)))))
+(defn math-pkg (make-pkg math))
+(asseq math-pkg->pi 3)
+(asseq math-pkg->e 2)
+(asseq math-pkg->more-constants-pkg->x 2)
+(asseq (math-pkg->max math-pkg->e math-pkg->pi) math-pkg->pi)
 (print "All tests passed.")
