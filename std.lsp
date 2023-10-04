@@ -66,13 +66,11 @@
 (defn dec (lambda (a)     (add -1 a))) (asseq (dec 1)   0)
 
 ;; application
-(defn map
-    (defn _map (lambda (fn ls acc)
-        (if (empty? ls) acc
-        (_map fn (tl ls)                ;; TODO: I tried calling `map` here accidentally, instead of _map. Should probably be an error, not a silent failure.
-            (cons (fn (hd ls)) acc)))))
-    (lambda (fn ls) (_map fn ls '())))
-(asseq (map inc (cons 1 '())) (cons 2 '()))
+(defn map (lambda (fn ls)
+    (if (empty? ls) '()
+    (cons (fn (hd ls)) (map fn (tl ls))))))
+        (defn ls (list 1 2 3))
+    (asseq (map inc ls) (list 2 3 4))
 
 
 ;; Getting higher-level, we can make
